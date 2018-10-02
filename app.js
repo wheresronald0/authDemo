@@ -25,15 +25,17 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
 //ROUTES
 app.get("/", (req, res) => {
-  res.render("Home");
+  res.render("home");
 });
 
-app.get("/secret", (req, res) => {
+app.get("/secret", isLoggedIn, (req, res) => {
+  //added isLoggedIn middelware defined below - next() refers to the next item in method after isLoggedin
   res.render("secret");
 });
 
@@ -62,6 +64,36 @@ app.post("/register", (req, res) => {
     }
   );
 });
+
+//LOGIN Routes
+//render login form
+app.get("/login", (req, res) => {
+  res.render("login");
+});
+
+//login logic
+//middleware is success and failure redirect
+app.post(
+  "/login",
+  passport.authenticate("local", {
+    successRedirect: "/secret",
+    failureRedirect: "/login"
+  }),
+  (req, res) => {}
+);
+
+app.get("/logout", (req, res) => {
+  req.logout();
+  res.redirect("/");
+});
+
+function isLoggedIn(req, res, next) {
+  //middleware function with builtin func from passport
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect("/login");
+}
 
 app.listen(4000, () => {
   console.log("Auth server is up!");
